@@ -2,6 +2,7 @@ package net.ivdata.taskerauto;
 /**
  * Created by MystX on 2/09/2017.
  */
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
@@ -26,12 +27,13 @@ public class MainCarActivity extends CarActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-        //startActivityForResult( TaskerIntent.getTaskSelectIntent(), 0 );
+        setContentView(R.layout.activity_car);
 
+        // Sharedprefs stores which tasks the user wants to display in-car
+        SharedPreferences sharedPreferences = getSharedPreferences("enabledTasks", MODE_PRIVATE);
 
         adapter=new ArrayAdapter<String>(this,
-                android.R.layout.simple_list_item_1,
+                R.layout.carlistview_row,
                 listItems);
         ((ListView)findViewById(R.id.list)).setAdapter(adapter);
 
@@ -46,19 +48,16 @@ public class MainCarActivity extends CarActivity {
             }
         });
 
-
+        // Get Tasker tasks
         Cursor c = getContentResolver().query( Uri.parse( "content://net.dinglisch.android.tasker/tasks" ), null, null, null, null );
 
         if ( c != null ) {
             int nameCol = c.getColumnIndex( "name" );
-            int projNameCol = c.getColumnIndex( "project_name" );
-
-            while ( c.moveToNext() ) {
-                Log.d("LALALALALALALA", c.getString(projNameCol) + "/" + c.getString(nameCol));
-                listItems.add(c.getString(nameCol));
-            }
+            // Add each task to the adapter IF the user has checked it in the phone app.
+            while ( c.moveToNext() )
+                if (sharedPreferences.contains(c.getString(nameCol)))
+                    listItems.add(c.getString(nameCol));
             c.close();
-
 
             adapter.notifyDataSetChanged();
         }
